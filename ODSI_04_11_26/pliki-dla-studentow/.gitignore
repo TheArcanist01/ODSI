@@ -1,0 +1,4 @@
+auth/*
+!auth/.gitkeep
+.env
+__pycache__/
