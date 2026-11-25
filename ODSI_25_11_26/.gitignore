@@ -1,0 +1,5 @@
+moj_klucz_prywatny.pem
+pliki-dla-studentow/klucz_prywatny.pem
+*prywatny*.pem
+__pycache__/
+.venv/

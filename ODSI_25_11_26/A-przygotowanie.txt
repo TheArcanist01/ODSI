@@ -1,0 +1,88 @@
+LABORATORIUM 8 - RSA I PODPIS CYFROWY
+
+JAK SIĘ PRZYGOTOWAĆ
+
+Ten materiał zawiera zakres, objaśnienia i ćwiczenia do przygotowania przed zajęciami.
+Pracuj na przykładach podanych poniżej. Odpowiedzi możesz najpierw opracować na kartce;
+uruchomienie przykładów pomaga sprawdzić rozumowanie. Źródła na końcu są uzupełniające.
+Na zajęcia przynieś własne notatki i przygotuj dostęp do swojego repozytorium.
+
+ZAKRES DO NAUCZENIA SIĘ
+
+- RSA: n = p·q, φ(n) = (p-1)(q-1), e względnie pierwsze z φ(n), d = e^(-1) mod φ(n).
+  Szyfrowanie c = m^e mod n, deszyfrowanie m = c^d mod n, warunek 0 <= m < n.
+- Rozszerzony algorytm Euklidesa i odwrotność modulo. Szybkie potęgowanie modularne
+  (metoda kwadratów i mnożeń). Dzielenie próbne do pierwiastka z n.
+- Zamiana bajtów na liczbę i z powrotem: big-endian, stała długość bloku.
+- Dlaczego podręcznikowe RSA jest deterministyczne i niebezpieczne; dopełnienie OAEP.
+- Podpis cyfrowy RSA-PSS: skrót SHA-256, MGF1, długość soli. Weryfikacja kluczem publicznym.
+- Integralność i autentyczność a poufność. Skąd wiadomo, że klucz publiczny jest właściwy.
+- Szyfrowanie hybrydowe: losowy klucz AES-256, AES-GCM (nonce 12 B, tag 16 B), klucz AES
+  zaszyfrowany RSA-OAEP z SHA-256. Limit długości wiadomości OAEP.
+- Formaty kluczy: PEM, SubjectPublicKeyInfo, PKCS#8 zaszyfrowany hasłem (PBES2, PBKDF2).
+- Długości kluczy: RSA 2048 bitów jako minimum, 3072 bity dla dłuższej ochrony.
+
+PRZED ZAJĘCIAMI
+
+1. Przygotuj środowisko wybranego języka, bibliotekę kryptograficzną i dostęp do GitHuba.
+   Przykład dla Pythona: pakiet cryptography albo pycryptodome.
+2. Sprawdź, że biblioteka wczytuje klucz PKCS#8 zaszyfrowany hasłem. Utwórz klucz testowy:
+   openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -aes-256-cbc -pass pass:test -out test.pem
+   Wczytaj go z hasłem "test". W Javie zwykle potrzebna jest biblioteka Bouncy Castle.
+3. Sprawdź w dokumentacji, jak ustawić w RSA-PSS sól 32 B i MGF1 z SHA-256 oraz
+   w RSA-OAEP skrót SHA-256 dla OAEP i MGF1. Domyślne wartości bibliotek się różnią.
+4. Przygotuj repozytorium na kod, README i pliki wynikowe. Dodaj klucze prywatne do .gitignore.
+
+OBJAŚNIENIA I PRZYKŁAD
+
+Dla p = 61, q = 53 mamy n = 3233, phi = 3120. Dla e = 17 odwrotnością modulo phi
+jest d = 2753, bo 17*2753 = 15*3120 + 1. Dla m = 65 szyfrogram to 2790,
+a 2790^2753 mod 3233 = 65. To przykład dydaktyczny, zbyt mały do ochrony danych.
+Potęgowanie modularne wykonuj przez kolejne kwadraty, redukując modulo po mnożeniu.
+Dzielenie próbne szuka dzielnika od 2 do pierwiastka z n; po znalezieniu p obliczasz q=n/p.
+Big-endian oznacza najbardziej znaczący bajt na początku: bajty 01 02 to liczba 258.
+Przy odtwarzaniu bloku zachowaj ustaloną długość, także początkowe bajty zerowe.
+
+Podręcznikowe RSA zawsze daje ten sam szyfrogram dla tej samej wiadomości i klucza.
+OAEP dodaje losowość i strukturę sprawdzaną przy deszyfrowaniu. Dla modułu długości k B
+i skrótu hLen B limit wiadomości wynosi k - 2*hLen - 2; RSA 2048 z SHA-256 daje 190 B.
+Dlatego duże dane szyfrujemy losowym kluczem AES-GCM, a RSA-OAEP tylko ten klucz.
+GCM sprawdza integralność tagiem; nie używaj wyniku, gdy weryfikacja tagu się nie powiedzie.
+Nonce GCM nie może powtórzyć się dla tego samego klucza.
+
+PSS podpisuje skrót z użyciem klucza prywatnego i losowej soli. Weryfikator używa
+klucza publicznego oraz zgodnych ustawień skrótu, MGF1 i długości soli. Podpis nie ukrywa
+treści i nie potwierdza tożsamości właściciela klucza bez zaufanego powiązania z osobą.
+PEM to tekstowa otoczka danych klucza; SubjectPublicKeyInfo opisuje klucz publiczny,
+a PKCS#8 klucz prywatny. Hasło chroni plik klucza, nie zastępuje klucza RSA.
+
+SAMOKONTROLA
+
+1. Sprawdź, że d = 2753 jest odwrotnością e = 17 modulo 3120.
+2. Czy podpis zapewnia poufność? Którego klucza używasz do weryfikacji?
+3. Ile bajtów ma szyfrogram RSA 2048? Czy OAEP-SHA-256 zaszyfruje nim 200 B naraz?
+
+ODPOWIEDZI DO SAMOKONTROLI
+
+1. Reszta z dzielenia 17*2753 przez 3120 wynosi 1.
+2. Nie; klucza publicznego podpisującego, którego pochodzenie trzeba potwierdzić.
+3. 256 B. Nie, limit wynosi 190 B; zastosuj szyfrowanie hybrydowe.
+
+ZASADY
+
+Trzy zadania po 1 pkt. 90 minut (2 x 45), w tym czas na raport i oddanie.
+Kod piszesz samodzielnie w dowolnym języku. W zadaniu 1 własne potęgowanie i faktoryzacja; odwrotność modulo może być biblioteczna.
+Dozwolone są materiały ISOD, dokumentacja, własne notatki i wcześniej przygotowany własny kod.
+Podczas zajęć wyłącz czaty i podpowiedzi oparte na LLM. Wyjaśniasz działanie programu.
+Oddajesz jeden plik raportu w formacie tekstowym, np. TXT, MD lub PDF z tekstem.
+Nazwa pliku jest dowolna. Raport należy oddać do końca zajęć.
+
+ŹRÓDŁA UZUPEŁNIAJĄCE
+
+- ISOD: Laboratorium 8 (RSA).
+- RFC 8017, PKCS #1 v2.2 (RSA, OAEP, PSS): https://datatracker.ietf.org/doc/html/rfc8017
+- NIST SP 800-57 Part 1 Rev. 5, długości kluczy: https://csrc.nist.gov/pubs/sp/800/57/pt1/r5/final
+- RFC 5208 i RFC 8018, PKCS#8 i PBES2: https://datatracker.ietf.org/doc/html/rfc8018
+- Python cryptography, RSA: https://cryptography.io/en/latest/hazmat/primitives/asymmetric/rsa/
+- Python cryptography, AES-GCM: https://cryptography.io/en/latest/hazmat/primitives/aead/
+- PyCryptodome, PKCS#1 OAEP i PSS: https://www.pycryptodome.org/src/cipher/oaep
